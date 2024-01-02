@@ -1,0 +1,60 @@
+CREATE OR REPLACE FUNCTION NUMAR_CARTI(string_data_imprumut VARCHAR2,string_data_retur VARCHAR2) RETURN NUMBER IS
+
+        INVALID_DATA EXCEPTION;
+        WRONG_DATA_FORMAT EXCEPTION;
+
+        v_data_imprumut DATE;
+        v_data_retur DATE;
+
+        v_numar_carti NUMBER :=0;
+
+    BEGIN
+
+        -- Convertire date si tratare exceptii
+        IF LENGTH(string_data_imprumut) <> 10 OR LENGTH(string_data_retur) <> 10 THEN
+            RAISE WRONG_DATA_FORMAT;
+        END IF;
+
+        v_data_imprumut := TRUNC(to_date(string_data_imprumut,'DD-MM-YYYY'));
+        v_data_retur := TRUNC(to_date(string_data_retur,'DD-MM-YYYY'));
+
+        IF v_data_retur <= v_data_imprumut THEN
+            RAISE INVALID_DATA;
+        END IF;
+
+        -- se selecteaza numarul de carti distincte
+        SELECT COUNT(DISTINCT(ID_CARTE))
+        INTO v_numar_carti
+        FROM CARTE, (SELECT ID_EXEMPLAR AS ID
+                     FROM INFO_IMPRUMUT
+                     WHERE TRUNC(DATA_RETUR)<= v_data_retur AND TRUNC(DATA_IMPRUMUT)>= v_data_imprumut) DATA
+
+        WHERE DATA.ID IN ( SELECT C_E.ID_EXEMPLAR
+                           FROM EXEMPLAR_CARTE C_E
+                           WHERE ID_CARTE = C_E.ID_CARTE);
+
+    return v_numar_carti;
+
+    EXCEPTION
+        WHEN INVALID_DATA THEN
+            DBMS_OUTPUT.PUT_LINE('Invalid Data');
+            return -1;
+        WHEN WRONG_DATA_FORMAT THEN
+            DBMS_OUTPUT.PUT_LINE('Wrong format');
+            return -1;
+
+    END;
+/
+
+declare
+    i number;
+begin
+    i := NUMAR_CARTI('01-01-2022','01-02-2024');
+    DBMS_OUTPUT.PUT_LINE(i);
+end;
+
+
+
+
+
+

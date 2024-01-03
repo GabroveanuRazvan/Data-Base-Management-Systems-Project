@@ -1,0 +1,50 @@
+CREATE OR REPLACE PROCEDURE FIND_CATEG (v_numar_carti NUMBER) IS
+    -- declarare variabile
+    v_denumire_categorie CATEGORIE.NUME_CATEGORIE%TYPE;
+    v_id_categorie CATEGORIE.ID_CATEGORIE%TYPE;
+    v_count NUMBER := 0;
+BEGIN
+    -- pentru fiecare id de categorie se numara cate carti exista
+    -- se mai apeleaza count pentru a determina cate categorii cu numarul respectiv exista
+    SELECT count(count(*))
+        INTO v_count
+        FROM CATEGORIE JOIN CARTE_CATEGORIE ON CATEGORIE.ID_CATEGORIE = CARTE_CATEGORIE.ID_CATEGORIE
+                       JOIN CARTE ON CARTE_CATEGORIE.ID_CARTE = CARTE.ID_CARTE
+                       JOIN EXEMPLAR_CARTE ON CARTE.ID_CARTE = EXEMPLAR_CARTE.ID_CARTE
+                       JOIN INFO_IMPRUMUT ON EXEMPLAR_CARTE.ID_EXEMPLAR = INFO_IMPRUMUT.ID_EXEMPLAR
+        GROUP BY CATEGORIE.ID_CATEGORIE
+        HAVING COUNT(CATEGORIE.ID_CATEGORIE) = v_numar_carti;
+
+    IF v_count>1 THEN
+        RAISE TOO_MANY_ROWS;
+    END IF;
+
+    SELECT CATEGORIE.ID_CATEGORIE,CATEGORIE.NUME_CATEGORIE
+    INTO v_id_categorie,v_denumire_categorie
+    FROM CATEGORIE WHERE CATEGORIE.ID_CATEGORIE = (
+        SELECT CATEGORIE.ID_CATEGORIE
+        FROM CATEGORIE JOIN CARTE_CATEGORIE ON CATEGORIE.ID_CATEGORIE = CARTE_CATEGORIE.ID_CATEGORIE
+                       JOIN CARTE ON CARTE_CATEGORIE.ID_CARTE = CARTE.ID_CARTE
+                       JOIN EXEMPLAR_CARTE ON CARTE.ID_CARTE = EXEMPLAR_CARTE.ID_CARTE
+                       JOIN INFO_IMPRUMUT ON EXEMPLAR_CARTE.ID_EXEMPLAR = INFO_IMPRUMUT.ID_EXEMPLAR
+        GROUP BY CATEGORIE.ID_CATEGORIE
+        HAVING COUNT(CATEGORIE.ID_CATEGORIE) = v_numar_carti
+        );
+
+    DBMS_OUTPUT.PUT_LINE('Categoria cu id-ul: ' || v_id_categorie);
+    DBMS_OUTPUT.PUT_LINE('Denumire categorie: ' || v_denumire_categorie);
+
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Nu exista categorii cu proprietatea ceruta');
+        WHEN TOO_MANY_ROWS THEN
+            DBMS_OUTPUT.PUT_LINE('Exista mai multe categorii cu proprietatea ceruta');
+
+END;
+
+BEGIN
+    FIND_CATEG(10);
+    FIND_CATEG(3);
+    FIND_CATEG(20);
+END;

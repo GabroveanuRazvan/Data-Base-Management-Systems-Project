@@ -47,12 +47,22 @@ CREATE OR REPLACE FUNCTION NUMAR_CARTI(string_data_imprumut VARCHAR2,string_data
 /
 
 declare
-    i number;
-begin
-    i := NUMAR_CARTI('01-01-2022','01-02-2024');
-    DBMS_OUTPUT.PUT_LINE(i);
-end;
+   i number;
 
+
+begin
+   -- ca cand subprogramul ruleaza
+   i := NUMAR_CARTI('01-01-2022','01-02-2024');
+   DBMS_OUTPUT.PUT_LINE(i);
+
+
+   -- caz data invalida
+   i:= NUMAR_CARTI('01-01-2022','01-02-2021');
+   DBMS_OUTPUT.PUT_LINE(i);
+   -- caz formatare gresita
+   i:= NUMAR_CARTI('1-01-2022','01-02-20212');
+   DBMS_OUTPUT.PUT_LINE(i);
+end;
 
 
 

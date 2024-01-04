@@ -1,0 +1,201 @@
+CREATE OR REPLACE PACKAGE PACHET_PROIECT IS
+    PROCEDURE afis_carti;
+    PROCEDURE imprumuturi_carte (v_id_carte_curenta CARTE.ID_CARTE%TYPE);
+    FUNCTION NUMAR_CARTI(string_data_imprumut VARCHAR2,string_data_retur VARCHAR2) RETURN NUMBER;
+    PROCEDURE FIND_CATEG (v_numar_carti NUMBER);
+
+END PACHET_PROIECT;
+
+CREATE OR REPLACE PACKAGE BODY PACHET_PROIECT IS
+    -- EX 6
+    PROCEDURE afis_carti
+
+    IS
+            -- declarare colectii
+            TYPE nume_exemplar IS TABLE OF EXEMPLAR_CARTE%ROWTYPE INDEX BY VARCHAR2(50);
+            TYPE index_exemplar IS TABLE OF EXEMPLAR_CARTE%ROWTYPE;
+            TYPE id_cinci IS VARRAY(5) OF CARTE.ID_CARTE%TYPE;
+
+            -- declarare variabile
+            c_carte_exemplare nume_exemplar;
+            c_exemplare index_exemplar := index_exemplar();
+            c_id_carti id_cinci := id_cinci();
+
+            -- variabile intermediare
+            v_titlu_curent CARTE.TITLU_CARTE%TYPE;
+            v_iterator VARCHAR2(50);
+    BEGIN
+
+            -- se selcteaza primele 5 id uri
+            select ID_CARTE
+            BULK COLLECT INTO c_id_carti
+            from CARTE
+            where ROWNUM<6
+            order by ID_CARTE;
+
+
+            FOR i in c_id_carti.first..c_id_carti.last LOOP
+                c_exemplare.extend;
+
+                -- se selecteaza un exemplar si se adauga in table
+                select *
+                into c_exemplare(c_exemplare.last)
+                from EXEMPLAR_CARTE
+                where ID_CARTE = c_id_carti(i) AND ROWNUM<2;
+
+                -- se salveaza titlul cartii curente in variabila
+                select TITLU_CARTE
+                into v_titlu_curent
+                from CARTE
+                where ID_CARTE = c_id_carti(i);
+
+                -- se insereaza in dictionar
+                c_carte_exemplare(v_titlu_curent) := c_exemplare(c_exemplare.LAST);
+
+            END LOOP;
+
+            -- afisare
+
+            -- se itereaza folosind o variabila de tipul varchar
+            v_iterator := c_carte_exemplare.FIRST;
+
+            WHILE v_iterator IS NOT NULL LOOP
+                DBMS_OUTPUT.PUT_LINE(v_iterator || ' : ' || c_carte_exemplare(v_iterator).AN_PUBLICATIE);
+                v_iterator := c_carte_exemplare.NEXT(v_iterator);
+
+            END LOOP;
+
+            EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                    DBMS_OUTPUT.PUT_LINE('Nu exista date!');
+                WHEN OTHERS THEN DBMS_OUTPUT.PUT_LINE('Alta eroare!');
+    END afis_carti;
+
+    -- EX 7
+    PROCEDURE imprumuturi_carte (v_id_carte_curenta CARTE.ID_CARTE%TYPE)
+    IS
+        -- folosit pentru a tine numararea de imprumuturi
+        v_index NUMBER :=0;
+
+        -- cursor pentru a selecta exemplarele cu id_ul de carte dat
+        CURSOR C_CARTI (v_id_carte_selectata CARTE.ID_CARTE%TYPE) IS
+            SELECT ID_EXEMPLAR
+            FROM EXEMPLAR_CARTE
+            WHERE ID_CARTE = v_id_carte_selectata;
+
+    BEGIN
+        -- iterare prin cursor
+        FOR EXEMPLAR IN C_CARTI(v_id_carte_curenta)
+
+        LOOP
+            --Cursor cu subcerere pentru a obtine imprumuturile cerute
+        FOR IMPRUMUT IN (SELECT *
+                         FROM INFO_IMPRUMUT I_F
+                         WHERE EXEMPLAR.ID_EXEMPLAR = I_F.ID_EXEMPLAR AND I_F.DATA_IMPRUMUT < SYSDATE)
+            LOOP
+                v_index:= v_index+1;
+                DBMS_OUTPUT.PUT_LINE('Imprumut ' || v_index);
+                DBMS_OUTPUT.PUT_LINE('Data imprumut:  ' || IMPRUMUT.DATA_IMPRUMUT);
+                DBMS_OUTPUT.PUT_LINE('Data retur:  ' || IMPRUMUT.DATA_RETUR);
+            END LOOP;
+        END LOOP;
+
+    END imprumuturi_carte;
+
+    -- EX 8
+    FUNCTION NUMAR_CARTI(string_data_imprumut VARCHAR2,string_data_retur VARCHAR2) RETURN NUMBER IS
+
+        INVALID_DATA EXCEPTION;
+        WRONG_DATA_FORMAT EXCEPTION;
+
+        v_data_imprumut DATE;
+        v_data_retur DATE;
+
+        v_numar_carti NUMBER :=0;
+
+    BEGIN
+
+        -- Convertire date si tratare exceptii
+        IF LENGTH(string_data_imprumut) <> 10 OR LENGTH(string_data_retur) <> 10 THEN
+            RAISE WRONG_DATA_FORMAT;
+        END IF;
+
+        v_data_imprumut := TRUNC(to_date(string_data_imprumut,'DD-MM-YYYY'));
+        v_data_retur := TRUNC(to_date(string_data_retur,'DD-MM-YYYY'));
+
+        IF v_data_retur <= v_data_imprumut THEN
+            RAISE INVALID_DATA;
+        END IF;
+
+        -- se selecteaza numarul de carti distincte
+        SELECT COUNT(DISTINCT(ID_CARTE))
+        INTO v_numar_carti
+        FROM CARTE, (SELECT ID_EXEMPLAR AS ID
+                     FROM INFO_IMPRUMUT
+                     WHERE TRUNC(DATA_RETUR)<= v_data_retur AND TRUNC(DATA_IMPRUMUT)>= v_data_imprumut) DATA
+
+        WHERE DATA.ID IN ( SELECT C_E.ID_EXEMPLAR
+                           FROM EXEMPLAR_CARTE C_E
+                           WHERE ID_CARTE = C_E.ID_CARTE);
+
+    return v_numar_carti;
+
+    EXCEPTION
+        WHEN INVALID_DATA THEN
+            DBMS_OUTPUT.PUT_LINE('Invalid Data');
+            return -1;
+        WHEN WRONG_DATA_FORMAT THEN
+            DBMS_OUTPUT.PUT_LINE('Wrong format');
+            return -1;
+
+    END NUMAR_CARTI;
+
+    -- EX 9
+
+    PROCEDURE FIND_CATEG (v_numar_carti NUMBER) IS
+    -- declarare variabile
+    v_denumire_categorie CATEGORIE.NUME_CATEGORIE%TYPE;
+    v_id_categorie CATEGORIE.ID_CATEGORIE%TYPE;
+    v_count NUMBER := 0;
+    BEGIN
+    -- pentru fiecare id de categorie se numara cate carti exista
+    -- se mai apeleaza count pentru a determina cate categorii cu numarul respectiv exista
+    SELECT count(count(*))
+        INTO v_count
+        FROM CATEGORIE JOIN CARTE_CATEGORIE ON CATEGORIE.ID_CATEGORIE = CARTE_CATEGORIE.ID_CATEGORIE
+                       JOIN CARTE ON CARTE_CATEGORIE.ID_CARTE = CARTE.ID_CARTE
+                       JOIN EXEMPLAR_CARTE ON CARTE.ID_CARTE = EXEMPLAR_CARTE.ID_CARTE
+                       JOIN INFO_IMPRUMUT ON EXEMPLAR_CARTE.ID_EXEMPLAR = INFO_IMPRUMUT.ID_EXEMPLAR
+        GROUP BY CATEGORIE.ID_CATEGORIE
+        HAVING COUNT(CATEGORIE.ID_CATEGORIE) = v_numar_carti;
+
+    IF v_count>1 THEN
+        RAISE TOO_MANY_ROWS;
+    END IF;
+
+    SELECT CATEGORIE.ID_CATEGORIE,CATEGORIE.NUME_CATEGORIE
+    INTO v_id_categorie,v_denumire_categorie
+    FROM CATEGORIE WHERE CATEGORIE.ID_CATEGORIE = (
+        SELECT CATEGORIE.ID_CATEGORIE
+        FROM CATEGORIE JOIN CARTE_CATEGORIE ON CATEGORIE.ID_CATEGORIE = CARTE_CATEGORIE.ID_CATEGORIE
+                       JOIN CARTE ON CARTE_CATEGORIE.ID_CARTE = CARTE.ID_CARTE
+                       JOIN EXEMPLAR_CARTE ON CARTE.ID_CARTE = EXEMPLAR_CARTE.ID_CARTE
+                       JOIN INFO_IMPRUMUT ON EXEMPLAR_CARTE.ID_EXEMPLAR = INFO_IMPRUMUT.ID_EXEMPLAR
+        GROUP BY CATEGORIE.ID_CATEGORIE
+        HAVING COUNT(CATEGORIE.ID_CATEGORIE) = v_numar_carti
+        );
+
+    DBMS_OUTPUT.PUT_LINE('Categoria cu id-ul: ' || v_id_categorie);
+    DBMS_OUTPUT.PUT_LINE('Denumire categorie: ' || v_denumire_categorie);
+
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Nu exista categorii cu proprietatea ceruta');
+        WHEN TOO_MANY_ROWS THEN
+            DBMS_OUTPUT.PUT_LINE('Exista mai multe categorii cu proprietatea ceruta');
+
+    END FIND_CATEG;
+
+END PACHET_PROIECT;
+

@@ -348,6 +348,9 @@ COMMIT;
 INSERT INTO CITITOR 
 VALUES (SEQ_CITITOR.NEXTVAL, 'C_Nume5', 'C_Prenume5', '0798385435', 'cititor5@example.com');
 COMMIT;
+INSERT INTO CITITOR
+VALUES (SEQ_CITITOR.NEXTVAL, 'C_Nume_Test1', 'C_Prenume_Test2', '0700000000', 'cititor@test.com');
+COMMIT;
 
 ---EDITURA---
 

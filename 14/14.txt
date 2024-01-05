@@ -1,0 +1,96 @@
+CREATE OR REPLACE PACKAGE EXEMPLAR_NOU IS
+
+    FUNCTION FIND_EDITURA(v_nume_editura EDITURA.NUME_EDITURA%TYPE) RETURN EDITURA.ID_EDITURA%TYPE;
+    FUNCTION FIND_CARTE(v_titlu_carte CARTE.TITLU_CARTE%TYPE) RETURN CARTE.ID_CARTE%TYPE;
+    PROCEDURE ADAUGA_CARTE(v_titlu_carte CARTE.TITLU_CARTE%TYPE);
+    PROCEDURE ADAUGA_EDITURA(v_nume_editura EDITURA.NUME_EDITURA%TYPE);
+
+    PROCEDURE ADAUGA_EXEMPLAR(v_titlu_carte CARTE.TITLU_CARTE%TYPE,v_nume_editura EDITURA.NUME_EDITURA%TYPE,v_an_publicatie EXEMPLAR_CARTE.AN_PUBLICATIE%TYPE);
+
+END EXEMPLAR_NOU;
+
+CREATE OR REPLACE PACKAGE BODY EXEMPLAR_NOU IS
+
+    v_id_carte_global CARTE.ID_CARTE%TYPE;
+    v_id_editura_global EDITURA.ID_EDITURA%TYPE;
+
+
+    FUNCTION FIND_EDITURA(v_nume_editura EDITURA.NUME_EDITURA%TYPE) RETURN EDITURA.ID_EDITURA%TYPE IS
+
+        v_id_editura EDITURA.ID_EDITURA%TYPE;
+    BEGIN
+
+        SELECT ID_EDITURA
+        INTO v_id_editura
+        FROM EDITURA
+        WHERE UPPER(NUME_EDITURA) = TRIM(UPPER(v_nume_editura));
+
+        RETURN v_id_editura;
+
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RETURN -1;
+
+    END FIND_EDITURA;
+
+
+    FUNCTION FIND_CARTE(v_titlu_carte CARTE.TITLU_CARTE%TYPE) RETURN CARTE.ID_CARTE%TYPE IS
+         v_id_carte CARTE.ID_CARTE%TYPE;
+         BEGIN
+
+            SELECT ID_CARTE
+            INTO v_id_carte
+            FROM CARTE
+            WHERE UPPER(TITLU_CARTE) = TRIM(UPPER(v_titlu_carte));
+
+            RETURN V_ID_CARTE;
+
+            EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RETURN -1;
+
+    END FIND_CARTE;
+
+
+    PROCEDURE ADAUGA_CARTE(v_titlu_carte CARTE.TITLU_CARTE%TYPE) IS
+    BEGIN
+        INSERT INTO CARTE
+        VALUES(SEQ_CARTE.NEXTVAL,v_titlu_carte);
+    END ADAUGA_CARTE;
+
+
+    PROCEDURE ADAUGA_EDITURA(v_nume_editura EDITURA.NUME_EDITURA%TYPE) IS
+    BEGIN
+        INSERT INTO editura (id_editura, nume_editura)
+        VALUES (SEQ_EDITURA.NEXTVAL, v_nume_editura);
+    END ADAUGA_EDITURA;
+
+    PROCEDURE ADAUGA_EXEMPLAR(v_titlu_carte CARTE.TITLU_CARTE%TYPE,v_nume_editura EDITURA.NUME_EDITURA%TYPE,v_an_publicatie EXEMPLAR_CARTE.AN_PUBLICATIE%TYPE) IS
+    BEGIN
+        v_id_carte_global := FIND_CARTE(v_titlu_carte);
+        v_id_editura_global := FIND_EDITURA(v_nume_editura);
+
+        IF v_id_carte_global = -1 THEN
+            ADAUGA_CARTE(v_titlu_carte);
+            v_id_carte_global := FIND_CARTE(v_titlu_carte);
+        END IF;
+
+        IF v_id_editura_global = -1 THEN
+            ADAUGA_EDITURA(v_nume_editura);
+            v_id_editura_global := FIND_EDITURA(v_nume_editura);
+        END IF;
+
+        INSERT INTO EXEMPLAR_CARTE
+        VALUES(SEQ_EXEMPLAR_CARTE.NEXTVAL,v_id_carte_global,v_id_editura_global,v_an_publicatie);
+
+    END ADAUGA_EXEMPLAR;
+
+END EXEMPLAR_NOU;
+
+ROLLBACK;
+
+SELECT * FROM EDITURA;
+
+SELECT * FROM CARTE;
+
+select * from EXEMPLAR_CARTE;

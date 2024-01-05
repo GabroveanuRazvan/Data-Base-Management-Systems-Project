@@ -235,14 +235,15 @@ VALUES(SEQ_CARTE.NEXTVAL,'Carte8');
 commit;
 ---INSERARI AUTORI---
 
--- Assuming the authors table already exists
-
--- Assuming the authors table already exists
-
 -- Inserting J.R.R. Tolkien
 INSERT INTO AUTOR 
 VALUES (SEQ_AUTOR.NEXTVAL, 'Tolkien', 'J.R.R.');
 COMMIT;
+
+INSERT INTO AUTOR
+VALUES (SEQ_AUTOR.NEXTVAL, 'Necunoscut', 'Necunoscut');
+Commit;
+
 -- Inserting Stieg Larsson
 INSERT INTO AUTOR 
 VALUES (SEQ_AUTOR.NEXTVAL, 'Larsson', 'Stieg');
@@ -422,6 +423,10 @@ commit;
 INSERT INTO categorie (id_categorie, nume_categorie)
 VALUES (SEQ_CATEGORIE.NEXTVAL, 'Ficțiune');
 COMMIT;
+
+INSERT INTO categorie (id_categorie, nume_categorie)
+VALUES (SEQ_CATEGORIE.NEXTVAL, 'Necunoscut');
+Commit;
 
 INSERT INTO categorie (id_categorie, nume_categorie)
 VALUES (SEQ_CATEGORIE.NEXTVAL, 'Non-ficțiune');

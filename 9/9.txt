@@ -1,3 +1,4 @@
+--9
 CREATE OR REPLACE PROCEDURE FIND_CATEG (v_numar_carti NUMBER) IS
     -- declarare variabile
     v_denumire_categorie CATEGORIE.NUME_CATEGORIE%TYPE;

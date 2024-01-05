@@ -1,6 +1,4 @@
-
-Pentru o carte (nu exemplar) data prin id-ul sau sa se afiseze data de imprumut si data de retur a tuturor imprumuturilor care au data de expirare mai mica decat data curenta.
-
+--7 
 
 CREATE OR REPLACE PROCEDURE imprumuturi_carte (v_id_carte_curenta CARTE.ID_CARTE%TYPE)
 IS

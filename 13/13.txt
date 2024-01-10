@@ -200,3 +200,27 @@ CREATE OR REPLACE PACKAGE BODY PACHET_PROIECT IS
 
 END PACHET_PROIECT;
 
+DECLARE
+   i NUMBER;
+BEGIN
+    --6
+    PACHET_PROIECT.afis_carti();
+    --7
+    PACHET_PROIECT.imprumuturi_carte(1);
+    --8
+    -- ca cand subprogramul ruleaza
+   i := PACHET_PROIECT.NUMAR_CARTI('01-01-2022','01-02-2024');
+   DBMS_OUTPUT.PUT_LINE(i);
+
+   -- caz data invalida
+   i:= PACHET_PROIECT.NUMAR_CARTI('01-01-2022','01-02-2021');
+   DBMS_OUTPUT.PUT_LINE(i);
+   -- caz formatare gresita
+   i:= PACHET_PROIECT.NUMAR_CARTI('1-01-2022','01-02-20212');
+   DBMS_OUTPUT.PUT_LINE(i);
+    --9
+    FIND_CATEG(10);
+    FIND_CATEG(3);
+    FIND_CATEG(20);
+END;
+

@@ -47,8 +47,8 @@ CREATE OR REPLACE FUNCTION NUMAR_CARTI(string_data_imprumut VARCHAR2,string_data
     END;
 /
 
-declare
-   i number;
+DECLARE
+   i NUMBER;
 
 
 begin
